@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Upload, X } from "lucide-react";
 
-const API_BASE_URL = "http://10.184.196.252:8000";
+const API_BASE_URL = "http://10.238.80.252:8000";
 
 interface QueryInputProps {
   onSubmit: (query: string) => void;
@@ -83,7 +83,7 @@ export default function QueryInput({
       {/* CSV Upload Modal */}
       {showCsvModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-md p-6 w-full max-w-md mx-4">
+          <div className="bg-white rounded-null p-6 w-full max-w-md mx-4">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium text-slate-900">Upload CSV Data</h3>
               <button onClick={closeCsvModal} className="p-1 hover:bg-slate-100 rounded">
@@ -114,7 +114,7 @@ export default function QueryInput({
             <button
               onClick={handleUploadCsv}
               disabled={!selectedFile || isUploading}
-              className="mt-4 w-full bg-blue-900 text-white py-2 px-4 rounded-md font-medium hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-4 w-full bg-blue-900 text-white py-2 px-4 rounded-null font-medium hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isUploading ? "Uploading..." : "Confirm Upload"}
             </button>

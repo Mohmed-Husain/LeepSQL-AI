@@ -6,7 +6,7 @@ import QueryInput from "./QueryInput";
 import { QueryResult, ConnectionInfo } from "../types";
 import { Check, X } from "lucide-react";
 
-const API_BASE_URL = "http://10.184.196.252:8000";
+const API_BASE_URL = "http://10.238.80.252:8000";
 
 interface ConsolePageProps {
   userName: string;
@@ -23,8 +23,9 @@ export default function ConsolePage({
   const [hasQueried, setHasQueried] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentResult, setCurrentResult] = useState<QueryResult | null>(null);
+  const [results, setResults] = useState<QueryResult[]>([]);
   const [pendingSqlQuery, setPendingSqlQuery] = useState<string | null>(null);
+  const [pendingUserQuery, setPendingUserQuery] = useState<string | null>(null);
 
   const handleQuery = async (query: string) => {
     setIsProcessing(true);
@@ -57,6 +58,7 @@ export default function ConsolePage({
       console.log(data);
       
       // Show the SQL query in modal for approval
+      setPendingUserQuery(query);
       setPendingSqlQuery(data.sql_query);
     } catch (err) {
       const errorMessage =
@@ -97,16 +99,18 @@ const executeApprovedQuery = async (sqlQuery: string) => {
 };
 
   const handleApproveQuery = async () => {
-    if (!pendingSqlQuery) return;
+    if (!pendingSqlQuery || !pendingUserQuery) return;
 
     const resultData = await executeApprovedQuery(pendingSqlQuery);
-    setCurrentResult({ sql_query: pendingSqlQuery, data: resultData });
+    setResults(prev => [...prev, { user_query: pendingUserQuery, sql_query: pendingSqlQuery, data: resultData }]);
     setPendingSqlQuery(null);
+    setPendingUserQuery(null);
   };
 
 
   const handleDiscardQuery = () => {
     setPendingSqlQuery(null);
+    setPendingUserQuery(null);
   };
 
   return (
@@ -122,7 +126,7 @@ const executeApprovedQuery = async (sqlQuery: string) => {
         {!hasQueried ? (
           <HeroSection />
         ) : (
-          <QueryWorkspace result={currentResult} error={error} />
+          <QueryWorkspace results={results} error={error} />
         )}
       </main>
 

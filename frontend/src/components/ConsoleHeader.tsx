@@ -1,4 +1,5 @@
 import { Database } from 'lucide-react';
+import databaseIcon from "../assets/databaseIcon.png";
 
 interface ConsoleHeaderProps {
   userName: string;
@@ -18,7 +19,7 @@ export default function ConsoleHeader({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
-            <Database className="w-6 h-6 text-slate-700" strokeWidth={2} />
+            <img src={databaseIcon} alt="Database" className="w-9 h-8" />
             <h1 className="text-xl font-semibold text-slate-900">LeapSQL</h1>
           </div>
           <div className="text-sm text-slate-600">

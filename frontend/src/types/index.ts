@@ -19,6 +19,7 @@ export interface ConnectionInfo {
 }
 
 export interface QueryResult {
+  user_query: string;
   sql_query: string;
   data?: Record<string, any>[];
   visualizationData?: any;

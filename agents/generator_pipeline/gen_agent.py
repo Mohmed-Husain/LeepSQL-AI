@@ -1,0 +1,113 @@
+# %%
+# %pip install -U langgraph langchain-core
+# %pip install langchain-google-genai langchain-core
+# %pip install python-dotenv
+# %pip install langchain-openai
+# %pip install langchain  langgraph
+# %pip install langchain langchain-ollama langgraph
+
+# # 'd:/Google_Hackathon/.venv/Scripts/python.exe -m pip install ipykernel -U --force-reinstall'
+
+# %%
+import json
+from langgraph.graph import StateGraph, START, END
+from langchain_core.prompts import ChatPromptTemplate
+from typing import TypedDict,List
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_google_genai import ChatGoogleGenerativeAI
+from pydantic import BaseModel,Field
+from typing import List , Dict , Any
+
+
+
+# %%
+POSTGRES_URL ="postgresql://postgres:,C^qsk~wWdq7*p4@db.gmixhcrgxajwaligvyxz.supabase.co:5432/postgres"
+
+# %%
+class GraphState(BaseModel):
+    table_schema: str= Field( description="The schema of the table" , default="") ,
+    user_query: str = Field( description="The user's query" ,default="") ,
+    sql_query: str = Field( description="The generated SQL query" ,default="") 
+class OutputSql(BaseModel):
+    sql_query: str = Field( description="The generated SQL query without anything else just sql query")
+
+# %%
+from langchain_ollama import ChatOllama
+llm = ChatOllama(
+    model="qwen3-vl:235b-cloud",
+    temperature=0.5
+)
+
+# %%
+structured_llm  = llm.with_structured_output(OutputSql)
+
+# %%
+prompt_generator = ChatPromptTemplate.from_messages([
+  ("system","You're smart coder who can code sql"
+   "you'll be given user query in natural lingo"
+   "you'll be given table schema."
+   "you've to return in json format with key as sql_query and value as sql query"
+   ),
+  ("human" , "user query:{user_query}"
+   "tableSChema:{table_schema}")
+])
+
+# %%
+from table_schema_extractor import get_user_tables
+
+def table_schema_extract (state : GraphState) -> Dict:
+    table_schema = get_user_tables(POSTGRES_URL)
+    return {"table_schema" : table_schema}
+
+# %%
+def generator(state:GraphState)->Dict:
+    response :OutputSql = structured_llm.invoke(
+        prompt_generator.format_messages(
+            user_query=state.user_query, 
+            table_schema = state.table_schema
+        )
+    )
+    return {"sql_query":response.sql_query}
+
+# %%
+from langgraph.graph import StateGraph, END
+
+graph = StateGraph(GraphState)
+
+graph.add_node("generator", generator)
+
+# Entry point must be ONE
+graph.set_entry_point("generator")
+
+# Generator → Evaluator
+graph.add_edge("generator", END)
+
+agent = graph.compile()
+
+# %%
+agent.invoke({
+    "user_query":"give me email id of aarav sharma in users table"
+})  
+
+# %%
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from typing import List, Dict
+
+def execute_query(query: str, connection_string: str=POSTGRES_URL) -> List[Dict]:
+    """Execute PostgreSQL query and return results as list of objects."""
+    with psycopg2.connect(connection_string) as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(query)
+            if cur.description:
+                return [dict(row) for row in cur.fetchall()]
+            conn.commit()
+            return []
+
+# %%
+execute_query("SELECT email FROM users WHERE name = 'Aarav Sharma';")
+
+# %%
+
+
+

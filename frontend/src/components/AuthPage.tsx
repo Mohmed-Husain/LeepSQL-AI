@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Lock, Database } from 'lucide-react';
-import { DatabaseCredentials } from '../types';
+import { DatabaseCredentials, ConnectionInfo } from '../types';
 import databaseIcon from "../assets/databaseIcon.png";
 
 interface AuthPageProps {
-  onAuthenticated: (user: { userId: string; name: string }, database: string) => void;
+  onAuthenticated: (user: { userId: string; name: string }, database: string, connectionInfo: ConnectionInfo) => void;
 }
 
 export default function AuthPage({ onAuthenticated }: AuthPageProps) {
@@ -44,48 +44,10 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
 
     setIsVerifying(true);
 
-    // Build connection string if using individual fields
-    const finalConnectionString = useConnectionString 
-      ? connectionString 
-      : `${dbType}://${dbUsername}:${dbPassword}@${host}:${port}/${dbName}`;
-
-    // Prepare data to send to backend
-    const authData = {
-      "connection_string": finalConnectionString,
-      "user_name": userId,
-      "password": password,
-    };
-
-    // Console log the data for checking
-    console.log('Auth Data being sent to backend:', authData);
-
-    try {
-      const response = await fetch('http://localhost:8000/api/db/connect', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(authData),
-      });
-
-      console.log('Backend response status:', response.status);
-      const responseData = await response.json();
-      console.log('Backend response data:', responseData);
-
-      if (!response.ok) {
-        throw new Error(responseData.detail || 'Connection failed');
-      }
-
+    setTimeout(() => {
       setIsVerifying(false);
       setIsVerified(true);
-    } catch (err) {
-      console.error('Error connecting to backend:', err);
-      setIsVerifying(false);
-      // For now, still allow verification to proceed for testing
-      setIsVerified(true);
-      // Uncomment below to show actual errors:
-      // setError(err instanceof Error ? err.message : 'Connection failed');
-    }
+    }, 1500);
   };
 
   const handleEnterConsole = () => {
@@ -93,7 +55,18 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
       setError('Please select a database');
       return;
     }
-    onAuthenticated({ userId, name: userId }, selectedDatabase);
+    
+    // Build connection string if using individual fields
+    const finalConnectionString = useConnectionString 
+      ? connectionString 
+      : `${dbType}://${dbUsername}:${dbPassword}@${host}:${port}/${dbName}`;
+    
+    const connectionInfo: ConnectionInfo = {
+      connectionString: finalConnectionString,
+      dbName: selectedDatabase
+    };
+    
+    onAuthenticated({ userId, name: userId }, selectedDatabase, connectionInfo);
   };
 
   return (

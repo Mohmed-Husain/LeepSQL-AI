@@ -13,6 +13,11 @@ export interface DatabaseCredentials {
   password?: string;
 }
 
+export interface ConnectionInfo {
+  connectionString: string;
+  dbName: string;
+}
+
 export interface QueryResult {
   naturalLanguageOutput: string;
   visualizationData?: ChartData;

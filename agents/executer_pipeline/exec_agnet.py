@@ -28,8 +28,7 @@ from typing import List , Dict , Any
 # %%
 class GraphState(BaseModel):
     sql_query: str
-    results: List[Dict[str, Any]]
-
+    results: List[Dict[str, Any]] = []
 # %%
 
 from typing import List, Dict

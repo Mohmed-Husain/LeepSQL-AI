@@ -70,13 +70,49 @@ export default function ConsolePage({
     }
   };
 
-  const handleApproveQuery = () => {
-    if (pendingSqlQuery) {
-      // TODO: Execute the approved SQL query here
-      setCurrentResult({ sql_query: pendingSqlQuery });
-      setPendingSqlQuery(null);
+
+const executeApprovedQuery = async (sqlQuery: string) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/executer`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        "sql_query": sqlQuery,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Executor error: ${response.status}`);
     }
-  };
+
+    const data = await response.json();
+
+    // ✅ THIS IS WHAT YOU ASKED FOR
+    console.log("Executor result array:", data);
+
+  } catch (err) {
+    console.error("Execution error:", err);
+  }
+};
+
+
+
+
+
+
+
+
+  const handleApproveQuery = async () => {
+  if (!pendingSqlQuery) return;
+
+  await executeApprovedQuery(pendingSqlQuery);
+
+  setCurrentResult({ sql_query: pendingSqlQuery });
+  setPendingSqlQuery(null);
+};
+
 
   const handleDiscardQuery = () => {
     setPendingSqlQuery(null);

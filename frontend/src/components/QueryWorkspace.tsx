@@ -1,7 +1,4 @@
-import { useState } from 'react';
-import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { QueryResult } from '../types';
-import SimpleChart from './SimpleChart';
 
 interface QueryWorkspaceProps {
   result: QueryResult | null;
@@ -9,9 +6,6 @@ interface QueryWorkspaceProps {
 }
 
 export default function QueryWorkspace({ result, error }: QueryWorkspaceProps) {
-  const [isChartCollapsed, setIsChartCollapsed] = useState(false);
-  const hasVisualization = result?.visualizationData !== undefined;
-
   if (error) {
     return (
       <div className="flex items-center justify-center h-full px-6">
@@ -27,44 +21,42 @@ export default function QueryWorkspace({ result, error }: QueryWorkspaceProps) {
     return null;
   }
 
+  const data = result.data;
+  const columns = data && data.length > 0 ? Object.keys(data[0]) : [];
+
   return (
-    <div className="flex h-full">
-      <div className={`${hasVisualization && !isChartCollapsed ? 'w-1/2' : 'flex-1'} border-r border-slate-200 overflow-y-auto`}>
-        <div className="p-6">
-          <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-4">
-            Natural Language Output
-          </h3>
-          <div className="prose prose-slate max-w-none">
-            <p className="text-slate-800 leading-relaxed whitespace-pre-wrap">
-              {result.naturalLanguageOutput}
-            </p>
-          </div>
+    <div className="h-full overflow-auto p-6">
+      <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-4">
+        Query Results
+      </h3>
+      
+      {data && data.length > 0 ? (
+        <div className="overflow-x-auto border border-slate-200 rounded-md">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-100">
+              <tr>
+                {columns.map((col) => (
+                  <th key={col} className="px-4 py-2 text-left font-medium text-slate-700 border-b border-slate-200">
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((row, idx) => (
+                <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50">
+                  {columns.map((col) => (
+                    <td key={col} className="px-4 py-2 text-slate-800">
+                      {String(row[col] ?? '')}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </div>
-
-      {hasVisualization && (
-        <div className={`${isChartCollapsed ? 'w-12' : 'w-1/2'} bg-slate-50 relative transition-all duration-200`}>
-          <button
-            onClick={() => setIsChartCollapsed(!isChartCollapsed)}
-            className="absolute left-2 top-4 z-10 p-1.5 bg-white border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-900"
-            aria-label={isChartCollapsed ? 'Expand chart' : 'Collapse chart'}
-          >
-            {isChartCollapsed ? (
-              <ChevronLeft className="w-4 h-4 text-slate-600" />
-            ) : (
-              <ChevronRight className="w-4 h-4 text-slate-600" />
-            )}
-          </button>
-
-          {!isChartCollapsed && (
-            <div className="p-6 pl-16 h-full overflow-y-auto">
-              <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-6">
-                Visual Analytics
-              </h3>
-              <SimpleChart data={result.visualizationData!} />
-            </div>
-          )}
-        </div>
+      ) : (
+        <p className="text-slate-500">No results to display.</p>
       )}
     </div>
   );

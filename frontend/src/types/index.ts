@@ -19,9 +19,10 @@ export interface ConnectionInfo {
 }
 
 export interface QueryResult {
-  naturalLanguageOutput: string;
-  visualizationData?: ChartData;
+  sql_query: string;
+  visualizationData?: any;
 }
+
 
 export interface ChartData {
   type: 'bar' | 'line' | 'pie';

@@ -14,9 +14,9 @@ from executer_pipeline.exec_agnet import agent as executer_agent
 from evaluator_pipeline.eval_agent import agent as evaluator_agent
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 import tempfile, os
-from csv_adder import import_csv_to_postgres
+from csv_adder.add_csv_to_db import import_csv_two_step
 # ==================== Pydantic Models ====================
-
+SUPABASE_URL = "postgresql://postgres:,C^qsk~wWdq7*p4@db.gmixhcrgxajwaligvyxz.supabase.co:5432/postgres"
 class QueryRequest(BaseModel):
     user_query: str = Field(..., description="Natural language query from user")
     postgres_url: str = Field(..., description="PostgreSQL connection URL")
@@ -81,30 +81,83 @@ async def root():
         }
     }
 
+# @app.post("/api/import-csv")
+# async def import_csv_endpoint(
+#     file: UploadFile = File(...),
+# ):
+#     """
+#     Upload CSV and import to Supabase table called 'fuckers'
+#     """
+#     if not file.filename.lower().endswith(".csv"):
+#         raise HTTPException(status_code=400, detail="Only CSV files allowed")
+    
+#     tmp_path = None
+    
+#     try:
+#         # Save uploaded file to temp location
+#         tmp_path = os.path.join(tempfile.gettempdir(), "upload_temp.csv")
+        
+#         with open(tmp_path, "wb") as f:
+#             content = await file.read()
+#             f.write(content)
+        
+#         print(f"📁 Saved temp file: {tmp_path}")
+#         print(f"🎯 Importing to table: fuckers")
+        
+#         # ⚠️ CRITICAL: Hardcode the exact table name you want
+#         import_csv_to_postgres(
+#             csv_path=tmp_path,
+#             table_name="fuckers"  # THIS controls the table name
+#         )
+        
+#         return {
+#             "message": "CSV imported successfully",
+#             "table_name": "fuckers",
+#             "filename": file.filename
+#         }
+        
+#     except Exception as e:
+#         print(f"❌ Error in endpoint: {e}")
+#         raise HTTPException(status_code=500, detail=str(e))
+    
+#     finally:
+#         # Clean up temp file
+#         if tmp_path and os.path.exists(tmp_path):
+#             os.remove(tmp_path)
+#             print(f"🗑️ Cleaned up temp file")
 
 @app.post("/api/import-csv")
-async def import_csv_endpoint(
-    file: UploadFile = File(...),
-   
-):
+async def import_csv_endpoint(file: UploadFile = File(...)):
     if not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV files allowed")
-
+    
+    tmp_path = None
+    
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
-            tmp.write(await file.read())
-            tmp_path = tmp.name
-
-        import_csv_to_postgres(
-            csv_path=tmp_path
+        tmp_path = os.path.join(tempfile.gettempdir(), f"upload_{os.urandom(4).hex()}.csv")
+        
+        with open(tmp_path, "wb") as f:
+            f.write(await file.read())
+        
+        # This now returns a dict!
+        result = import_csv_two_step(
+            csv_path=tmp_path,
+            table_name="temp_tablegfhdfhhdgh2",
+            connection_url=SUPABASE_URL
         )
-
-        return {"message": "CSV imported successfully"}
-
+        
+        # Now this works because result is a dict
+        return {
+            "message": f"CSV successfully imported to table 'temp_table'",
+            "uploaded_filename": file.filename,
+            **result  # ✅ This works now!
+        }
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
     finally:
-        if "tmp_path" in locals() and os.path.exists(tmp_path):
+        if tmp_path and os.path.exists(tmp_path):
             os.remove(tmp_path)
 
 

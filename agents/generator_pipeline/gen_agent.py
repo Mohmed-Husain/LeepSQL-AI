@@ -47,6 +47,9 @@ prompt_generator = ChatPromptTemplate.from_messages([
    "you'll be given user query in natural lingo"
    "you'll be given table schema."
    "you've to return in json format with key as sql_query and value as sql query"
+   "if user is saying about table and append table in table like .. like user says ``give me all data from products`` then don't write query like this:- select * from productstable; instead write like this:- select * from products;"
+   "you'll be given schema so please consider joins also where required."
+   "IMP*****:-you to write postgresssql"
    ),
   ("human" , "user query:{user_query}"
    "tableSChema:{table_schema}")

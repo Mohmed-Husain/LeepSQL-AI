@@ -7,7 +7,7 @@ import { QueryResult, ConnectionInfo } from "../types";
 
 
 
-const API_BASE_URL = "http://10.238.80.252:8000";
+const API_BASE_URL = "http://localhost:8000";
 
 interface ConsolePageProps {
   userName: string;

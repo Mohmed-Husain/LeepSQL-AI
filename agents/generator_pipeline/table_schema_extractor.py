@@ -21,11 +21,11 @@ def get_detailed_schema(db_url: str) -> str:
         conn = psycopg2.connect(db_url)
         cur = conn.cursor()
         
-        # Get all user tables
+        # Get all user tables (only from public schema)
         tables_query = """
             SELECT table_schema, table_name 
             FROM information_schema.tables 
-            WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
+            WHERE table_schema = 'public'
             AND table_type = 'BASE TABLE'
             ORDER BY table_schema, table_name
         """
@@ -173,7 +173,7 @@ def get_user_tables(db_url: str) -> str:
             conn.close()
 
 # Example usage:
-# if __name__ == "__main__":
-#     url = "postgresql://user:password@localhost:5432/mydb"
-#     tables_str = get_user_tables(url)
-#     print(tables_str)
+if __name__ == "__main__":
+    url = "postgresql://postgres:,C^qsk~wWdq7*p4@db.gmixhcrgxajwaligvyxz.supabase.co:5432/postgres"
+    tables_str = get_detailed_schema(url)
+    print(tables_str)

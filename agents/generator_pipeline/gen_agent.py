@@ -56,10 +56,10 @@ prompt_generator = ChatPromptTemplate.from_messages([
 ])
 
 # %%
-from generator_pipeline.table_schema_extractor import get_user_tables
+from generator_pipeline.table_schema_extractor import get_detailed_schema
 
 def table_schema_extract (state : GraphState) -> Dict:
-    table_schema = get_user_tables(POSTGRES_URL)
+    table_schema = get_detailed_schema(POSTGRES_URL)
     return {"table_schema" : table_schema}
 
 # %%
@@ -73,15 +73,15 @@ def generator(state:GraphState)->Dict:
     return {"sql_query":response.sql_query}
 
 # %%
-from langgraph.graph import StateGraph, END
+from langgraph.graph import StateGraph, END , START
 
 graph = StateGraph(GraphState)
 
 graph.add_node("generator", generator)
+graph.add_node("table_schema_extract", table_schema_extract)
 
-# Entry point must be ONE
-graph.set_entry_point("generator")
-
+graph.add_edge(START, "table_schema_extract")
+graph.add_edge("table_schema_extract", "generator")
 # Generator → Evaluator
 graph.add_edge("generator", END)
 

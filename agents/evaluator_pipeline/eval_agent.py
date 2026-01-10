@@ -45,8 +45,8 @@ INSTRUCTIONS:
 2. has_problem MUST be a boolean (true/false)
 3. problem_description MUST be an empty string "" when has_problem is false
 4. NEVER use null/None for problem_description
-5. If no problem exists: {"has_problem": false, "problem_description": ""}
-6. If problem exists: {"has_problem": true, "problem_description": "EXACT ISSUE HERE"}
+5. If no problem exists: {{'has_problem': false, "problem_description": ""}}
+6. If problem exists: {{'has_problem': true, "problem_description": "EXACT ISSUE HERE"}}
 
 Check for:
 - Destructive operations (DROP, DELETE without WHERE, TRUNCATE)
@@ -59,14 +59,18 @@ Check for:
 
 
 # %%
-def evaluator(state:GraphState)->Dict:
-    response :OutputFormat = structured_llm.invoke(
+def evaluator(state: GraphState) -> dict:
+    response: OutputFormat = structured_llm.invoke(
         prompt_generator.format_messages(
             user_query=state.user_query, 
-            sql_query = state.sql_query
+            sql_query=state.sql_query
         )
     )
-    return {"has_problem":response.has_problem , "problem_description" : response.problem_description}
+    # Return dictionary with correct keys matching GraphState fields
+    return {
+        "has_problem": response.has_problem,
+        "problem_description": response.problem_description
+    }
 
 # %%
 from langgraph.graph import StateGraph, END
@@ -84,30 +88,13 @@ graph.add_edge("evaluator", END)
 agent = graph.compile()
 
 # %%
-agent.invoke({
-    "user_query":"give me email id of aarav sharma in users table",
-     "sql_query": "SELECT email FROM users WHERE name = 'Aarav Sharma';",
-     "has_problem":False,
-     "problem_description":""
-})
+# agent.invoke({
+#     "user_query": "give me email id of aarav sharma in users table",
+#     "sql_query": "SELECT email FROM users WHERE name = 'Aarav Sharma';",
+#     "has_problem": False,
+#     "problem_description": ""
+# })
 
-# %%
-import psycopg2
-from psycopg2.extras import RealDictCursor
-from typing import List, Dict
-POSTGRES_URL ="postgresql://postgres:,C^qsk~wWdq7*p4@db.gmixhcrgxajwaligvyxz.supabase.co:5432/postgres"
-def execute_query(query: str, connection_string: str = POSTGRES_URL) -> List[Dict]:
-    """Execute PostgreSQL query and return results as list of objects."""
-    with psycopg2.connect(connection_string) as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(query)
-            if cur.description:
-                return [dict(row) for row in cur.fetchall()]
-            conn.commit()
-            return []
-
-# %%
-execute_query("SELECT email FROM users WHERE name = 'Aarav Sharma';")
 
 # %%
 

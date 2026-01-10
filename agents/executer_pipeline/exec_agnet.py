@@ -52,7 +52,7 @@ graph.add_edge("executer", END)
 agent = graph.compile()
 
 # %%
-agent.invoke({"sql_query":"SELECT * FROM users LIMIT 5;" , "results":[]})
+# agent.invoke({"sql_query":"SELECT * FROM users LIMIT 5;" , "results":[]})
 
 # %%
 

@@ -53,7 +53,7 @@ prompt_generator = ChatPromptTemplate.from_messages([
 ])
 
 # %%
-from table_schema_extractor import get_user_tables
+from generator_pipeline.table_schema_extractor import get_user_tables
 
 def table_schema_extract (state : GraphState) -> Dict:
     table_schema = get_user_tables(POSTGRES_URL)
@@ -84,28 +84,28 @@ graph.add_edge("generator", END)
 
 agent = graph.compile()
 
-# %%
-agent.invoke({
-    "user_query":"give me email id of aarav sharma in users table"
-})  
+# # %%
+# agent.invoke({
+#     "user_query":"give me email id of aarav sharma in users table"
+# })  
 
 # %%
-import psycopg2
-from psycopg2.extras import RealDictCursor
-from typing import List, Dict
+# import psycopg2
+# from psycopg2.extras import RealDictCursor
+# from typing import List, Dict
 
-def execute_query(query: str, connection_string: str=POSTGRES_URL) -> List[Dict]:
-    """Execute PostgreSQL query and return results as list of objects."""
-    with psycopg2.connect(connection_string) as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(query)
-            if cur.description:
-                return [dict(row) for row in cur.fetchall()]
-            conn.commit()
-            return []
+# def execute_query(query: str, connection_string: str=POSTGRES_URL) -> List[Dict]:
+#     """Execute PostgreSQL query and return results as list of objects."""
+#     with psycopg2.connect(connection_string) as conn:
+#         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+#             cur.execute(query)
+#             if cur.description:
+#                 return [dict(row) for row in cur.fetchall()]
+#             conn.commit()
+#             return []
 
 # %%
-execute_query("SELECT email FROM users WHERE name = 'Aarav Sharma';")
+# execute_query("SELECT email FROM users WHERE name = 'Aarav Sharma';")
 
 # %%
 

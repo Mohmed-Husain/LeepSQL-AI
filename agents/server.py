@@ -66,8 +66,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
+# ==================== API Endpoints ====================
 @app.get("/")
 async def root():
     return {
@@ -100,11 +99,11 @@ async def generate(request: GenerateFormat):
 @app.post("/api/executer")
 async def execute(reqest:ExecuterFormat):
    
-    res =executer_agent.invoke({
-            "sql_query":reqest.sql_query,
-            "result":[]
-        }) 
-    
+    res = executer_agent.invoke({
+    "sql_query": reqest.sql_query,
+    "results": []
+})
+
     return res['results']
         
         

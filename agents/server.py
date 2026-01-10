@@ -12,6 +12,9 @@ import re
 from generator_pipeline.gen_agent import agent as generate_agent
 from executer_pipeline.exec_agnet import agent as executer_agent
 from evaluator_pipeline.eval_agent import agent as evaluator_agent
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+import tempfile, os
+from csv_adder import import_csv_to_postgres
 # ==================== Pydantic Models ====================
 
 class QueryRequest(BaseModel):
@@ -77,6 +80,33 @@ async def root():
             "/health": "GET - Health check"
         }
     }
+
+
+@app.post("/api/import-csv")
+async def import_csv_endpoint(
+    file: UploadFile = File(...),
+   
+):
+    if not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Only CSV files allowed")
+
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
+            tmp.write(await file.read())
+            tmp_path = tmp.name
+
+        import_csv_to_postgres(
+            csv_path=tmp_path
+        )
+
+        return {"message": "CSV imported successfully"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if "tmp_path" in locals() and os.path.exists(tmp_path):
+            os.remove(tmp_path)
+
 
 @app.post("/api/generate")
 async def generate(request: GenerateFormat):

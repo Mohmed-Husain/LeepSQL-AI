@@ -3,7 +3,7 @@ import csv
 import psycopg2
 from urllib.parse import urlparse, urlunparse
 
-def import_csv_to_postgres(connection_url: str, database: str, csv_path: str) -> None:
+def import_csv_to_postgres( csv_path: str, database: str="postgres",connection_url: str="postgresql://postgres:,C^qsk~wWdq7*p4@db.gmixhcrgxajwaligvyxz.supabase.co:5432") -> None:
     """
     Import CSV data into PostgreSQL database with table name matching CSV filename.
     
@@ -109,13 +109,3 @@ def import_csv_to_postgres(connection_url: str, database: str, csv_path: str) ->
         if 'conn' in locals() and conn:
             conn.close()
 
-# Example usage
-if __name__ == "__main__":
-    try:
-        import_csv_to_postgres(
-            connection_url="postgresql://postgres:,C^qsk~wWdq7*p4@db.gmixhcrgxajwaligvyxz.supabase.co:5432",
-            database="postgres",
-            csv_path="k.csv"
-        )
-    except Exception as e:
-        print(f"Error: {e}")

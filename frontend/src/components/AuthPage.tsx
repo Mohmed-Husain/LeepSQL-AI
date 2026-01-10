@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Lock, Database } from 'lucide-react';
+
 import { DatabaseCredentials, ConnectionInfo } from '../types';
 import databaseIcon from "../assets/databaseIcon.png";
 
@@ -261,7 +261,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 )}
 
                 <p className="text-xs text-slate-500 flex items-start gap-1.5">
-                  <Lock className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                
                   <span>These credentials are used only to establish a secure session. Credentials are never stored on the client.</span>
                 </p>
               </div>

@@ -4,9 +4,9 @@ import HeroSection from "./HeroSection";
 import QueryWorkspace from "./QueryWorkspace";
 import QueryInput from "./QueryInput";
 import { QueryResult, ConnectionInfo } from "../types";
-import { Check, X } from "lucide-react";
 
-const API_BASE_URL = "http://10.184.196.252:8000";
+
+const API_BASE_URL = "http://10.238.80.252:8000";
 
 interface ConsolePageProps {
   userName: string;
@@ -140,14 +140,14 @@ const executeApprovedQuery = async (sqlQuery: string) => {
                   className="p-2 bg-green-600 text-white rounded-md hover:bg-green-700"
                   title="Approve"
                 >
-                  <Check className="w-5 h-5" />
+               
                 </button>
                 <button
                   onClick={handleDiscardQuery}
                   className="p-2 bg-red-600 text-white rounded-md hover:bg-red-700"
                   title="Discard"
                 >
-                  <X className="w-5 h-5" />
+               
                 </button>
               </div>
             </div>

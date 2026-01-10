@@ -88,30 +88,21 @@ const executeApprovedQuery = async (sqlQuery: string) => {
     }
 
     const data = await response.json();
-
-    // ✅ THIS IS WHAT YOU ASKED FOR
     console.log("Executor result array:", data);
-
+    return data;
   } catch (err) {
     console.error("Execution error:", err);
+    return null;
   }
 };
 
-
-
-
-
-
-
-
   const handleApproveQuery = async () => {
-  if (!pendingSqlQuery) return;
+    if (!pendingSqlQuery) return;
 
-  await executeApprovedQuery(pendingSqlQuery);
-
-  setCurrentResult({ sql_query: pendingSqlQuery });
-  setPendingSqlQuery(null);
-};
+    const resultData = await executeApprovedQuery(pendingSqlQuery);
+    setCurrentResult({ sql_query: pendingSqlQuery, data: resultData });
+    setPendingSqlQuery(null);
+  };
 
 
   const handleDiscardQuery = () => {

@@ -1,5 +1,6 @@
 import psycopg2
 
+
 def get_user_tables(db_url: str) -> str:
     """
     Fetch all user-defined tables from PostgreSQL database as a string.

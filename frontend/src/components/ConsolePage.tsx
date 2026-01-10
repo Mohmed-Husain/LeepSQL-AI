@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import ConsoleHeader from './ConsoleHeader';
-import HeroSection from './HeroSection';
-import QueryWorkspace from './QueryWorkspace';
-import QueryInput from './QueryInput';
-import { QueryResult, ConnectionInfo } from '../types';
+import { useState } from "react";
+import ConsoleHeader from "./ConsoleHeader";
+import HeroSection from "./HeroSection";
+import QueryWorkspace from "./QueryWorkspace";
+import QueryInput from "./QueryInput";
+import { QueryResult, ConnectionInfo } from "../types";
 
-const API_BASE_URL = 'http://10.184.196.252:8000';
+const API_BASE_URL = "http://10.184.196.252:8000";
 
 interface ConsolePageProps {
   userName: string;
@@ -13,12 +13,16 @@ interface ConsolePageProps {
   connectionInfo: ConnectionInfo;
 }
 
-export default function ConsolePage({ userName, databaseName, connectionInfo }: ConsolePageProps) {
+export default function ConsolePage({
+  userName,
+  databaseName,
+  connectionInfo,
+}: ConsolePageProps) {
   const [developerMode, setDeveloperMode] = useState(false);
   const [hasQueried, setHasQueried] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currentResult, setCurrentResult] = useState<QueryResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [currentResult, setCurrentResult] = useState<QueryResult | null>(null);
 
   const handleQuery = async (query: string) => {
     setIsProcessing(true);
@@ -30,15 +34,15 @@ export default function ConsolePage({ userName, databaseName, connectionInfo }: 
 
     try {
       const requestBody = {
-        "postgres_url": connectionInfo.connectionString,
-        "db_name": connectionInfo.dbName,
-        "user_query": query
+        postgres_url: connectionInfo.connectionString,
+        db_name: connectionInfo.dbName,
+        user_query: query,
       };
 
       const response = await fetch(`http://10.184.196.252:8000/api/generate`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(requestBody),
       });
@@ -48,18 +52,18 @@ export default function ConsolePage({ userName, databaseName, connectionInfo }: 
       }
 
       const data = await response.json();
-      
+      console.log(data);
       // Map API response to QueryResult format
-      const result: QueryResult = {
-        naturalLanguageOutput: data.naturalLanguageOutput || data.response || JSON.stringify(data),
-        visualizationData: data.visualizationData
-      };
-
-      setCurrentResult(result);
+      setCurrentResult({
+        sql_query: data.sql_query,
+      });
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred while processing your query';
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "An error occurred while processing your query";
       setError(errorMessage);
-      console.error('Query error:', err);
+      console.error("Query error:", err);
     } finally {
       setIsProcessing(false);
     }

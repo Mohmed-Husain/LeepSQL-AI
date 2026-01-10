@@ -15,6 +15,7 @@ export default function QueryInput({
   const [query, setQuery] = useState("");
   const [showCsvModal, setShowCsvModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [tableName, setTableName] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -42,7 +43,7 @@ export default function QueryInput({
   };
 
   const handleUploadCsv = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !tableName.trim()) return;
 
     setIsUploading(true);
     setUploadStatus(null);
@@ -50,6 +51,7 @@ export default function QueryInput({
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
+      formData.append("table_name", tableName.trim());
 
       const response = await fetch(`${API_BASE_URL}/api/import-csv`, {
         method: "POST",
@@ -63,6 +65,7 @@ export default function QueryInput({
       const data = await response.json();
       setUploadStatus(data.message || "CSV imported successfully");
       setSelectedFile(null);
+      setTableName("");
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (err) {
       setUploadStatus(err instanceof Error ? err.message : "Upload failed");
@@ -74,6 +77,7 @@ export default function QueryInput({
   const closeCsvModal = () => {
     setShowCsvModal(false);
     setSelectedFile(null);
+    setTableName("");
     setUploadStatus(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -91,13 +95,35 @@ export default function QueryInput({
               </button>
             </div>
 
-            <input
-              type="file"
-              accept=".csv"
-              onChange={handleFileChange}
-              ref={fileInputRef}
-              className="w-full border border-slate-300 rounded-md p-2 text-sm"
-            />
+            <div className="mb-4">
+              <label htmlFor="tableName" className="block text-sm font-medium text-slate-700 mb-1.5">
+                Table Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="tableName"
+                type="text"
+                value={tableName}
+                onChange={(e) => setTableName(e.target.value)}
+                placeholder="Enter the table name for this CSV"
+                className="w-full border border-slate-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-transparent"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                This will be the name of the table created from the CSV file.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                CSV File <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleFileChange}
+                ref={fileInputRef}
+                className="w-full border border-slate-300 rounded-md p-2 text-sm"
+              />
+            </div>
 
             {selectedFile && (
               <p className="mt-2 text-sm text-slate-600">
@@ -113,7 +139,7 @@ export default function QueryInput({
 
             <button
               onClick={handleUploadCsv}
-              disabled={!selectedFile || isUploading}
+              disabled={!selectedFile || !tableName.trim() || isUploading}
               className="mt-4 w-full bg-blue-900 text-white py-2 px-4 rounded-null font-medium hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isUploading ? "Uploading..." : "Confirm Upload"}

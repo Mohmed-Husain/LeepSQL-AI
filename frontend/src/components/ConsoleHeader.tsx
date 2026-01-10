@@ -1,4 +1,3 @@
-import { Database } from 'lucide-react';
 import databaseIcon from "../assets/databaseIcon.png";
 
 interface ConsoleHeaderProps {

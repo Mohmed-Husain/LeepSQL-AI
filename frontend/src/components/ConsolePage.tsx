@@ -77,6 +77,7 @@ export default function ConsolePage({
       });
       
       if (evalResponse.ok) {
+      
         const evalData = await evalResponse.json();
         console.log("Evaluator result:", evalData);
         
@@ -118,6 +119,9 @@ const executeApprovedQuery = async (sqlQuery: string) => {
 
     if (!response.ok) {
       throw new Error(`Executor error: ${response.status}`);
+    }
+    else {
+        alert("You're query execution is done!! ");
     }
 
     const data = await response.json();

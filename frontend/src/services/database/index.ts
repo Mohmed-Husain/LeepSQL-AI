@@ -22,46 +22,46 @@ export { SQLiteAdapter } from './SQLiteAdapter';
 export type DatabaseType = 'sqlite' | 'postgres' | 'supabase' | 'firebase' | 'mongodb';
 
 interface DatabaseConfig {
-  type: DatabaseType;
-  connectionString?: string;
-  apiKey?: string;
-  projectId?: string;
+    type: DatabaseType;
+    connectionString?: string;
+    apiKey?: string;
+    projectId?: string;
 }
 
 let currentAdapter: DatabaseAdapter | null = null;
 
 export async function createDatabaseAdapter(config?: DatabaseConfig): Promise<DatabaseAdapter> {
-  const type = config?.type || 'sqlite';
+    const type = config?.type || 'sqlite';
 
-  switch (type) {
-    case 'sqlite':
-    default:
-      // Using IndexedDB-based SQLite adapter for local storage
-      const adapter = new SQLiteAdapter();
-      await adapter.initialize();
-      currentAdapter = adapter;
-      return adapter;
+    switch (type) {
+        case 'sqlite':
+        default:
+            // Using IndexedDB-based SQLite adapter for local storage
+            const adapter = new SQLiteAdapter();
+            await adapter.initialize();
+            currentAdapter = adapter;
+            return adapter;
 
-    // Future implementations:
-    // case 'postgres':
-    //   const postgresAdapter = new PostgresAdapter(config.connectionString);
-    //   await postgresAdapter.initialize();
-    //   return postgresAdapter;
-    //
-    // case 'supabase':
-    //   const supabaseAdapter = new SupabaseAdapter(config.connectionString, config.apiKey);
-    //   await supabaseAdapter.initialize();
-    //   return supabaseAdapter;
-  }
+        // Future implementations:
+        // case 'postgres':
+        //   const postgresAdapter = new PostgresAdapter(config.connectionString);
+        //   await postgresAdapter.initialize();
+        //   return postgresAdapter;
+        //
+        // case 'supabase':
+        //   const supabaseAdapter = new SupabaseAdapter(config.connectionString, config.apiKey);
+        //   await supabaseAdapter.initialize();
+        //   return supabaseAdapter;
+    }
 }
 
 export function getCurrentAdapter(): DatabaseAdapter | null {
-  return currentAdapter;
+    return currentAdapter;
 }
 
 export async function closeDatabaseConnection(): Promise<void> {
-  if (currentAdapter) {
-    await currentAdapter.close();
-    currentAdapter = null;
-  }
+    if (currentAdapter) {
+        await currentAdapter.close();
+        currentAdapter = null;
+    }
 }

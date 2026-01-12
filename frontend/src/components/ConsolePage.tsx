@@ -34,11 +34,11 @@ export default function ConsolePage({
   const [feedbackToast, setFeedbackToast] = useState<{ message: string; visible: boolean }>({ message: "", visible: false });
   const [toastProgress, setToastProgress] = useState(100);
 
-  const { 
-    currentSession, 
-    currentMessages, 
-    createNewSession, 
-    addMessage 
+  const {
+    currentSession,
+    currentMessages,
+    createNewSession,
+    addMessage
   } = useChatHistory();
 
   // Initialize a session when the component mounts if none exists
@@ -99,7 +99,7 @@ export default function ConsolePage({
 
       const data = await response.json();
       console.log(data);
-      
+
       // Call evaluator to check for problems
       const evalResponse = await fetch(`${API_BASE_URL}/api/evaluater`, {
         method: "POST",
@@ -113,19 +113,19 @@ export default function ConsolePage({
           problem_description: ""
         }),
       });
-      
+
       if (evalResponse.ok) {
-      
+
         const evalData = await evalResponse.json();
         console.log("Evaluator result:", evalData);
-        
+
         if (evalData.has_problem) {
           // Show feedback toast with problem description
           setFeedbackToast({ message: evalData.problem_description, visible: true });
           setToastProgress(100);
         }
       }
-      
+
       // Show the SQL query in modal for approval
       setPendingUserQuery(query);
       setPendingSqlQuery(data.sql_query);
@@ -143,51 +143,51 @@ export default function ConsolePage({
   };
 
 
-const executeApprovedQuery = async (sqlQuery: string) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/executer`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        "sql_query": sqlQuery,
-      }),
-    });
+  const executeApprovedQuery = async (sqlQuery: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/executer`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          "sql_query": sqlQuery,
+        }),
+      });
 
-    if (!response.ok) {
-      throw new Error(`Executor error: ${response.status}`);
-    }
-    else {
+      if (!response.ok) {
+        throw new Error(`Executor error: ${response.status}`);
+      }
+      else {
         alert("You're query execution is done!! ");
-    }
+      }
 
-    const data = await response.json();
-    console.log("Executor result array:", data);
-    return data;
-  } catch (err) {
-    console.error("Execution error:", err);
-    return null;
-  }
-};
+      const data = await response.json();
+      console.log("Executor result array:", data);
+      return data;
+    } catch (err) {
+      console.error("Execution error:", err);
+      return null;
+    }
+  };
 
   const handleApproveQuery = async () => {
     if (!pendingSqlQuery || !pendingUserQuery) return;
 
     // Use edited query in developer mode, otherwise use original
     const queryToExecute = developerMode ? editedSqlQuery : pendingSqlQuery;
-    
+
     const resultData = await executeApprovedQuery(queryToExecute);
     const newResult = { user_query: pendingUserQuery, sql_query: queryToExecute, data: resultData };
     setResults(prev => [...prev, newResult]);
-    
+
     // Save to chat history
     try {
       await addMessage(pendingUserQuery, queryToExecute, resultData);
     } catch (err) {
       console.error('Failed to save to chat history:', err);
     }
-    
+
     setPendingSqlQuery(null);
     setPendingUserQuery(null);
     setEditedSqlQuery("");

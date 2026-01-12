@@ -56,17 +56,17 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
       setError('Please select a database');
       return;
     }
-    
+
     // Build connection string if using individual fields
-    const finalConnectionString = useConnectionString 
-      ? connectionString 
+    const finalConnectionString = useConnectionString
+      ? connectionString
       : `${dbType}://${dbUsername}:${dbPassword}@${host}:${port}/${dbName}`;
-    
+
     const connectionInfo: ConnectionInfo = {
       connectionString: finalConnectionString,
       dbName: selectedDatabase
     };
-    
+
     onAuthenticated({ userId, name: userId }, selectedDatabase, connectionInfo);
   };
 
@@ -266,7 +266,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 )}
 
                 <p className="text-xs text-slate-500 dark:text-slate-400 flex items-start gap-1.5">
-                
+
                   <span>These credentials are used only to establish a secure session. Credentials are never stored on the client.</span>
                 </p>
               </div>

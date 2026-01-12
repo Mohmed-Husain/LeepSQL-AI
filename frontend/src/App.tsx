@@ -2,6 +2,8 @@ import { useState } from 'react';
 import AuthPage from './components/AuthPage';
 import ConsolePage from './components/ConsolePage';
 import { ConnectionInfo } from './types';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { ChatHistoryProvider } from './contexts/ChatHistoryContext';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -16,11 +18,17 @@ function App() {
     setIsAuthenticated(true);
   };
 
-  if (!isAuthenticated) {
-    return <AuthPage onAuthenticated={handleAuthenticated} />;
-  }
-
-  return <ConsolePage userName={user!.name} databaseName={selectedDatabase} connectionInfo={connectionInfo!} />;
+  return (
+    <ThemeProvider>
+      <ChatHistoryProvider>
+        {!isAuthenticated ? (
+          <AuthPage onAuthenticated={handleAuthenticated} />
+        ) : (
+          <ConsolePage userName={user!.name} databaseName={selectedDatabase} connectionInfo={connectionInfo!} />
+        )}
+      </ChatHistoryProvider>
+    </ThemeProvider>
+  );
 }
 
 export default App;

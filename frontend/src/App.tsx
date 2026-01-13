@@ -42,9 +42,9 @@ function App() {
         <AuthPage onAuthenticated={handleAuthenticated} />
       ) : (
         <ChatHistoryProvider userId={user!.userId}>
-          <ConsolePage 
-            userName={user!.name} 
-            databaseName={selectedDatabase} 
+          <ConsolePage
+            userName={user!.name}
+            databaseName={selectedDatabase}
             connectionInfo={connectionInfo!}
             onLogout={handleLogout}
             onBackToDbSelect={handleBackToDbSelect}

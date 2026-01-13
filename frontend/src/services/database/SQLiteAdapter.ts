@@ -100,7 +100,7 @@ export class SQLiteAdapter implements DatabaseAdapter {
                         createdAt: new Date(data.createdAt),
                         updatedAt: new Date(data.updatedAt),
                     }))
-                    .sort((a: ChatSession, b: ChatSession) => 
+                    .sort((a: ChatSession, b: ChatSession) =>
                         b.createdAt.getTime() - a.createdAt.getTime()
                     );
                 resolve(userSessions);

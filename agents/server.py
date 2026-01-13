@@ -239,15 +239,16 @@ from evaluator_pipeline.eval_agent import agent as evaluator_agent
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 import tempfile, os
 from csv_adder.add_csv_to_db import import_csv_two_step
+
 # ==================== Pydantic Models ====================
-SUPABASE_URL = "postgresql://postgres:,C^qsk~wWdq7*p4@db.gmixhcrgxajwaligvyxz.supabase.co:5432/postgres"
 class QueryRequest(BaseModel):
     user_query: str = Field(..., description="Natural language query from user")
     postgres_url: str = Field(..., description="PostgreSQL connection URL")
     database: str = Field(default="postgres", description="Database name")
 
 class ExecuterFormat(BaseModel):
-    sql_query:str
+    sql_query: str
+    connection_string: str = Field(..., description="PostgreSQL connection URL")
 
 class QueryResponse(BaseModel):
     success: bool
@@ -293,6 +294,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ==================== Database Connection Models ====================
+class VerifyConnectionRequest(BaseModel):
+    connection_string: str = Field(..., description="PostgreSQL connection URL")
+
+class VerifyConnectionResponse(BaseModel):
+    success: bool
+    message: str
+    databases: Optional[List[str]] = None
+
 # ==================== API Endpoints ====================
 @app.get("/")
 async def root():
@@ -301,9 +312,121 @@ async def root():
         "version": "1.0.0",
         "endpoints": {
             "/query": "POST - Execute secure SQL query",
-            "/health": "GET - Health check"
+            "/health": "GET - Health check",
+            "/api/verify-connection": "POST - Verify database connection"
         }
     }
+
+@app.post("/api/verify-connection", response_model=VerifyConnectionResponse)
+async def verify_connection(request: VerifyConnectionRequest):
+    """
+    Verify database connection and return list of available databases.
+    """
+    conn = None
+    try:
+        # Parse connection string and handle SSL for cloud databases (Neon, Supabase, etc.)
+        connection_string = request.connection_string
+        
+        # Remove channel_binding parameter as it's not supported by all psycopg2 versions
+        # This is commonly added by Neon but can cause issues
+        if 'channel_binding' in connection_string:
+            # Remove channel_binding parameter from the connection string
+            import urllib.parse
+            parsed = urllib.parse.urlparse(connection_string)
+            query_params = urllib.parse.parse_qs(parsed.query)
+            query_params.pop('channel_binding', None)
+            new_query = urllib.parse.urlencode(query_params, doseq=True)
+            connection_string = urllib.parse.urlunparse((
+                parsed.scheme, parsed.netloc, parsed.path,
+                parsed.params, new_query, parsed.fragment
+            ))
+        
+        # Try to connect to the database
+        # psycopg2 handles sslmode from the connection string automatically
+        conn = psycopg2.connect(connection_string)
+        cursor = conn.cursor()
+        
+        # Get the current database name from connection
+        cursor.execute("SELECT current_database();")
+        current_db = cursor.fetchone()[0]
+        
+        # For cloud databases like Neon, users typically only have access to their own database
+        # Try to list databases, but fall back to just the current one if permission denied
+        try:
+            cursor.execute("""
+                SELECT datname FROM pg_database 
+                WHERE datistemplate = false 
+                ORDER BY datname;
+            """)
+            databases = [row[0] for row in cursor.fetchall()]
+        except:
+            # If we can't list databases (permission issue), just use the current one
+            databases = [current_db]
+        
+        # Make sure current database is in the list and at the top
+        if current_db in databases:
+            databases.remove(current_db)
+        databases.insert(0, current_db)
+        
+        cursor.close()
+        conn.close()
+        
+        return VerifyConnectionResponse(
+            success=True,
+            message="Connection established successfully",
+            databases=databases
+        )
+        
+    except psycopg2.OperationalError as e:
+        error_msg = str(e)
+        if "password authentication failed" in error_msg:
+            return VerifyConnectionResponse(
+                success=False,
+                message="Authentication failed. Please check your username and password.",
+                databases=None
+            )
+        elif "could not connect to server" in error_msg or "Connection refused" in error_msg:
+            return VerifyConnectionResponse(
+                success=False,
+                message="Could not connect to the database server. Please check the host and port.",
+                databases=None
+            )
+        elif "does not exist" in error_msg:
+            return VerifyConnectionResponse(
+                success=False,
+                message="Database does not exist. Please check the database name.",
+                databases=None
+            )
+        elif "channel_binding" in error_msg.lower():
+            return VerifyConnectionResponse(
+                success=False,
+                message="SSL channel binding error. Try removing 'channel_binding=require' from your connection string.",
+                databases=None
+            )
+        elif "ssl" in error_msg.lower():
+            return VerifyConnectionResponse(
+                success=False,
+                message="SSL connection error. Please check your SSL settings.",
+                databases=None
+            )
+        else:
+            return VerifyConnectionResponse(
+                success=False,
+                message=f"Connection failed: {error_msg}",
+                databases=None
+            )
+    except Exception as e:
+        return VerifyConnectionResponse(
+            success=False,
+            message=f"Connection error: {str(e)}",
+            databases=None
+        )
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except:
+                pass
 
 # @app.post("/api/import-csv")
 # async def import_csv_endpoint(
@@ -351,7 +474,12 @@ async def root():
 #             print(f"🗑️ Cleaned up temp file")
 
 @app.post("/api/import-csv")
-async def import_csv_endpoint(file: UploadFile = File(...)):
+async def import_csv_endpoint(
+    file: UploadFile = File(...),
+    table_name: str = Form(...),
+    connection_string: str = Form(...)
+):
+    """Import CSV to the user's connected database."""
     if not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV files allowed")
     
@@ -363,18 +491,30 @@ async def import_csv_endpoint(file: UploadFile = File(...)):
         with open(tmp_path, "wb") as f:
             f.write(await file.read())
         
-        # This now returns a dict!
+        # Remove channel_binding parameter if present
+        conn_str = connection_string
+        if 'channel_binding' in conn_str:
+            import urllib.parse
+            parsed = urllib.parse.urlparse(conn_str)
+            query_params = urllib.parse.parse_qs(parsed.query)
+            query_params.pop('channel_binding', None)
+            new_query = urllib.parse.urlencode(query_params, doseq=True)
+            conn_str = urllib.parse.urlunparse((
+                parsed.scheme, parsed.netloc, parsed.path,
+                parsed.params, new_query, parsed.fragment
+            ))
+        
+        # Import CSV to user's database
         result = import_csv_two_step(
             csv_path=tmp_path,
-            table_name="temp_tablegfhdfhhdgh2",
-            connection_url=SUPABASE_URL
+            table_name=table_name,
+            connection_url=conn_str
         )
         
-        # Now this works because result is a dict
         return {
-            "message": f"CSV successfully imported to table 'temp_table'",
+            "message": f"CSV successfully imported to table '{table_name}'",
             "uploaded_filename": file.filename,
-            **result  # ✅ This works now!
+            **result
         }
         
     except Exception as e:
@@ -421,14 +561,39 @@ async def generate(request: GenerateFormat):
 
 
 @app.post("/api/executer")
-async def execute(reqest:ExecuterFormat):
-   
-    res = executer_agent.invoke({
-    "sql_query": reqest.sql_query,
-    "results": []
-})
-
-    return res['results']
+async def execute(reqest: ExecuterFormat):
+    """Execute SQL query on the user's connected database."""
+    try:
+        # Remove channel_binding parameter if present
+        connection_string = reqest.connection_string
+        if 'channel_binding' in connection_string:
+            import urllib.parse
+            parsed = urllib.parse.urlparse(connection_string)
+            query_params = urllib.parse.parse_qs(parsed.query)
+            query_params.pop('channel_binding', None)
+            new_query = urllib.parse.urlencode(query_params, doseq=True)
+            connection_string = urllib.parse.urlunparse((
+                parsed.scheme, parsed.netloc, parsed.path,
+                parsed.params, new_query, parsed.fragment
+            ))
+        
+        # Execute query on user's database
+        conn = psycopg2.connect(connection_string)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(reqest.sql_query)
+        
+        if cursor.description:
+            results = [dict(row) for row in cursor.fetchall()]
+        else:
+            conn.commit()
+            results = [{"message": "Query executed successfully", "rows_affected": cursor.rowcount}]
+        
+        cursor.close()
+        conn.close()
+        
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
         
         
 
@@ -448,6 +613,84 @@ async def execute(reqest:ExecuterFormat):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) 
+
+# ==================== Direct SQL Execution (Dev Mode - No AI) ====================
+class DirectSQLRequest(BaseModel):
+    sql_query: str = Field(..., description="Raw SQL query to execute")
+    connection_string: str = Field(..., description="PostgreSQL connection URL")
+
+@app.post("/api/execute-direct")
+async def execute_direct(request: DirectSQLRequest):
+    """
+    Execute raw SQL query directly without AI processing.
+    This is for developer mode to save LLM costs.
+    """
+    print(f"[execute-direct] SQL: {request.sql_query}")
+    print(f"[execute-direct] Connection string length: {len(request.connection_string)}")
+    
+    conn = None
+    try:
+        # Remove channel_binding parameter if present
+        connection_string = request.connection_string
+        if 'channel_binding' in connection_string:
+            import urllib.parse
+            parsed = urllib.parse.urlparse(connection_string)
+            query_params = urllib.parse.parse_qs(parsed.query)
+            query_params.pop('channel_binding', None)
+            new_query = urllib.parse.urlencode(query_params, doseq=True)
+            connection_string = urllib.parse.urlunparse((
+                parsed.scheme, parsed.netloc, parsed.path,
+                parsed.params, new_query, parsed.fragment
+            ))
+        
+        # Execute query directly on user's database
+        conn = psycopg2.connect(connection_string)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(request.sql_query)
+        
+        # Check if query returns data (SELECT) or modifies data (INSERT/UPDATE/DELETE)
+        has_results = cursor.description is not None
+        
+        if has_results:
+            results = [dict(row) for row in cursor.fetchall()]
+            rows_count = len(results)
+            message = f"Query executed successfully. {rows_count} row(s) returned."
+        else:
+            conn.commit()
+            results = []
+            rows_count = cursor.rowcount
+            message = f"Query executed successfully. {rows_count} row(s) affected."
+        
+        cursor.close()
+        conn.close()
+        
+        return {
+            "success": True,
+            "message": message,
+            "data": results,
+            "rows_affected": rows_count
+        }
+    except psycopg2.Error as e:
+        return {
+            "success": False,
+            "message": f"SQL Error: {e.pgerror or str(e)}",
+            "data": None,
+            "rows_affected": 0
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Error: {str(e)}",
+            "data": None,
+            "rows_affected": 0
+        }
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except:
+                pass
+
 # ==================== Run Server ====================
 
 if __name__ == "__main__": 

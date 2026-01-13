@@ -30,8 +30,9 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const [isVerifying, setIsVerifying] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [error, setError] = useState('');
-  const [availableDatabases] = useState(['production_db', 'analytics_db', 'staging_db']);
+  const [availableDatabases, setAvailableDatabases] = useState<string[]>([]);
   const [selectedDatabase, setSelectedDatabase] = useState('');
+  const [verifiedConnectionString, setVerifiedConnectionString] = useState('');
 
   // Check for existing session on mount
   useEffect(() => {
@@ -180,12 +181,38 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
       return;
     }
 
+    // Build connection string
+    const finalConnectionString = useConnectionString
+      ? connectionString
+      : `${dbType}://${dbUsername}:${dbPassword}@${host}:${port}/${dbName}`;
+
     setIsVerifying(true);
 
-    setTimeout(() => {
+    try {
+      const response = await fetch('http://localhost:8000/api/verify-connection', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          connection_string: finalConnectionString,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setIsVerified(true);
+        setAvailableDatabases(data.databases || []);
+        setVerifiedConnectionString(finalConnectionString);
+      } else {
+        setError(data.message || 'Failed to verify connection');
+      }
+    } catch (err) {
+      setError('Failed to connect to the server. Make sure the backend is running.');
+    } finally {
       setIsVerifying(false);
-      setIsVerified(true);
-    }, 1500);
+    }
   };
 
   const handleEnterConsole = () => {
@@ -194,13 +221,8 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
       return;
     }
 
-    // Build connection string if using individual fields
-    const finalConnectionString = useConnectionString
-      ? connectionString
-      : `${dbType}://${dbUsername}:${dbPassword}@${host}:${port}/${dbName}`;
-
     const connectionInfo: ConnectionInfo = {
-      connectionString: finalConnectionString,
+      connectionString: verifiedConnectionString,
       dbName: selectedDatabase
     };
 
@@ -236,8 +258,8 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 <button
                   onClick={() => { setAuthMode('signin'); setError(''); }}
                   className={`flex-1 pb-3 text-sm font-medium transition-colors ${authMode === 'signin'
-                      ? 'text-blue-900 dark:text-blue-400 border-b-2 border-blue-900 dark:border-blue-400'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                    ? 'text-blue-900 dark:text-blue-400 border-b-2 border-blue-900 dark:border-blue-400'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                     }`}
                 >
                   Sign In
@@ -245,8 +267,8 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 <button
                   onClick={() => { setAuthMode('signup'); setError(''); }}
                   className={`flex-1 pb-3 text-sm font-medium transition-colors ${authMode === 'signup'
-                      ? 'text-blue-900 dark:text-blue-400 border-b-2 border-blue-900 dark:border-blue-400'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                    ? 'text-blue-900 dark:text-blue-400 border-b-2 border-blue-900 dark:border-blue-400'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                     }`}
                 >
                   Sign Up

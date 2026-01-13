@@ -5,7 +5,7 @@ import QueryWorkspace from "./QueryWorkspace";
 import QueryInput from "./QueryInput";
 import ChatHistory from "./ChatHistory";
 import { QueryResult, ConnectionInfo } from "../types";
-import { Check, X, AlertTriangle } from "lucide-react";
+import { Check, X, AlertTriangle, Play, Terminal } from "lucide-react";
 import { useChatHistory } from "../contexts/ChatHistoryContext";
 
 
@@ -33,6 +33,11 @@ export default function ConsolePage({
   const [editedSqlQuery, setEditedSqlQuery] = useState<string>("");
   const [feedbackToast, setFeedbackToast] = useState<{ message: string; visible: boolean }>({ message: "", visible: false });
   const [toastProgress, setToastProgress] = useState(100);
+
+  // Direct SQL mode state (dev mode)
+  const [directSqlQuery, setDirectSqlQuery] = useState("");
+  const [isExecutingDirect, setIsExecutingDirect] = useState(false);
+  const [showDirectSqlPanel, setShowDirectSqlPanel] = useState(false);
 
   const {
     currentSession,
@@ -132,15 +137,14 @@ export default function ConsolePage({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          "sql_query": sqlQuery,
+          sql_query: sqlQuery,
+          connection_string: connectionInfo.connectionString,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`Executor error: ${response.status}`);
-      }
-      else {
-        alert("You're query execution is done!! ");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Executor error: ${response.status}`);
       }
 
       const data = await response.json();
@@ -148,7 +152,67 @@ export default function ConsolePage({
       return data;
     } catch (err) {
       console.error("Execution error:", err);
+      setError(err instanceof Error ? err.message : "Query execution failed");
       return null;
+    }
+  };
+
+  // Direct SQL execution (no AI - for dev mode)
+  const executeDirectSQL = async () => {
+    if (!directSqlQuery.trim()) {
+      setError("Please enter a SQL query");
+      return;
+    }
+
+    console.log("Executing direct SQL:", directSqlQuery.trim());
+    console.log("Connection string:", connectionInfo.connectionString);
+
+    setIsExecutingDirect(true);
+    setError(null);
+
+    if (!hasQueried) {
+      setHasQueried(true);
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/execute-direct`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sql_query: directSqlQuery.trim(),
+          connection_string: connectionInfo.connectionString,
+        }),
+      });
+
+      console.log("Response status:", response.status);
+      const data = await response.json();
+      console.log("Response data:", data);
+
+      if (data.success) {
+        const newResult: QueryResult = {
+          user_query: `[Direct SQL] ${directSqlQuery.trim().substring(0, 50)}${directSqlQuery.length > 50 ? '...' : ''}`,
+          sql_query: directSqlQuery.trim(),
+          data: data.data,
+        };
+        setResults(prev => [...prev, newResult]);
+
+        // Save to chat history
+        try {
+          await addMessage(newResult.user_query, directSqlQuery.trim(), data.data);
+        } catch (err) {
+          console.error('Failed to save to chat history:', err);
+        }
+
+        setDirectSqlQuery("");
+      } else {
+        setError(data.message || "Query execution failed");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to execute query");
+    } finally {
+      setIsExecutingDirect(false);
     }
   };
 
@@ -273,7 +337,59 @@ export default function ConsolePage({
               </div>
             </div>
           )}
-          <QueryInput onSubmit={handleQuery} isProcessing={isProcessing} />
+
+          {/* Direct SQL Panel (Developer Mode Only) */}
+          {developerMode && (
+            <div className="border-t border-slate-200 dark:border-slate-700">
+              <button
+                onClick={() => setShowDirectSqlPanel(!showDirectSqlPanel)}
+                className="w-full px-4 py-2 flex items-center justify-between bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                <div className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+                  <Terminal className="w-4 h-4" />
+                  <span>Direct SQL Console</span>
+                  <span className="text-xs bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded">No AI - Save Costs</span>
+                </div>
+                <span className="text-slate-500 dark:text-slate-400 text-sm">
+                  {showDirectSqlPanel ? '▼' : '▶'}
+                </span>
+              </button>
+
+              {showDirectSqlPanel && (
+                <div className="bg-slate-100 dark:bg-slate-800 px-4 py-3">
+                  <div className="max-w-4xl mx-auto">
+                    <textarea
+                      value={directSqlQuery}
+                      onChange={(e) => setDirectSqlQuery(e.target.value)}
+                      placeholder="Enter your SQL query directly... (e.g., SELECT * FROM users LIMIT 10;)"
+                      className="w-full h-32 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-md font-mono text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent resize-none"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                          e.preventDefault();
+                          executeDirectSQL();
+                        }
+                      }}
+                    />
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Press <kbd className="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-xs">Ctrl</kbd> + <kbd className="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-xs">Enter</kbd> to execute
+                      </p>
+                      <button
+                        onClick={executeDirectSQL}
+                        disabled={isExecutingDirect || !directSqlQuery.trim()}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-slate-400 disabled:cursor-not-allowed text-white text-sm font-medium rounded-md transition-colors"
+                      >
+                        <Play className="w-4 h-4" />
+                        {isExecutingDirect ? 'Executing...' : 'Execute SQL'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <QueryInput onSubmit={handleQuery} isProcessing={isProcessing} connectionInfo={connectionInfo} />
         </div>
       </div>
 

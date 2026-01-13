@@ -1,16 +1,19 @@
 import { useState, useRef } from "react";
 import { Upload, X } from "lucide-react";
+import { ConnectionInfo } from "../types";
 
 const API_BASE_URL = "http://localhost:8000";
 
 interface QueryInputProps {
   onSubmit: (query: string) => void;
   isProcessing: boolean;
+  connectionInfo?: ConnectionInfo;
 }
 
 export default function QueryInput({
   onSubmit,
   isProcessing,
+  connectionInfo,
 }: QueryInputProps) {
   const [query, setQuery] = useState("");
   const [showCsvModal, setShowCsvModal] = useState(false);
@@ -52,6 +55,9 @@ export default function QueryInput({
       const formData = new FormData();
       formData.append("file", selectedFile);
       formData.append("table_name", tableName.trim());
+      if (connectionInfo?.connectionString) {
+        formData.append("connection_string", connectionInfo.connectionString);
+      }
 
       const response = await fetch(`${API_BASE_URL}/api/import-csv`, {
         method: "POST",
@@ -59,7 +65,8 @@ export default function QueryInput({
       });
 
       if (!response.ok) {
-        throw new Error(`Upload failed: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Upload failed: ${response.status}`);
       }
 
       const data = await response.json();

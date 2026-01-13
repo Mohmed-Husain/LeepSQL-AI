@@ -10,11 +10,13 @@
 
 # %%
 import json
+from os import getenv
 from langgraph.graph import StateGraph, START, END
 from langchain_core.prompts import ChatPromptTemplate
 from typing import TypedDict,List
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
+from google import genai
 from pydantic import BaseModel,Field
 from typing import List , Dict , Any
 
@@ -32,9 +34,14 @@ class OutputSql(BaseModel):
     sql_query: str = Field( description="The generated SQL query without anything else just sql query")
 
 # %%
-from langchain_ollama import ChatOllama
-llm = ChatOllama(
-    model="qwen3-vl:235b-cloud",
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
+    google_api_key=os.getenv("GOOGLE_API_KEY"),
     temperature=0.5
 )
 

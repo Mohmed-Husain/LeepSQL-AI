@@ -4,6 +4,7 @@ import ConsolePage from './components/ConsolePage';
 import { ConnectionInfo } from './types';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ChatHistoryProvider } from './contexts/ChatHistoryContext';
+import { supabase } from './lib/supabase';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -18,15 +19,38 @@ function App() {
     setIsAuthenticated(true);
   };
 
+  const handleLogout = async () => {
+    // Sign out from Supabase
+    await supabase.auth.signOut();
+    // Reset all state
+    setIsAuthenticated(false);
+    setUser(null);
+    setSelectedDatabase('');
+    setConnectionInfo(null);
+  };
+
+  const handleBackToDbSelect = () => {
+    // Keep user logged in but go back to database selection
+    setIsAuthenticated(false);
+    setSelectedDatabase('');
+    setConnectionInfo(null);
+  };
+
   return (
     <ThemeProvider>
-      <ChatHistoryProvider>
-        {!isAuthenticated ? (
-          <AuthPage onAuthenticated={handleAuthenticated} />
-        ) : (
-          <ConsolePage userName={user!.name} databaseName={selectedDatabase} connectionInfo={connectionInfo!} />
-        )}
-      </ChatHistoryProvider>
+      {!isAuthenticated ? (
+        <AuthPage onAuthenticated={handleAuthenticated} />
+      ) : (
+        <ChatHistoryProvider userId={user!.userId}>
+          <ConsolePage 
+            userName={user!.name} 
+            databaseName={selectedDatabase} 
+            connectionInfo={connectionInfo!}
+            onLogout={handleLogout}
+            onBackToDbSelect={handleBackToDbSelect}
+          />
+        </ChatHistoryProvider>
+      )}
     </ThemeProvider>
   );
 }

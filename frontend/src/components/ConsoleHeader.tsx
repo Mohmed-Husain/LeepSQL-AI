@@ -1,3 +1,4 @@
+import { ArrowLeft, LogOut } from "lucide-react";
 import databaseIcon from "../assets/databaseIcon.png";
 import ThemeToggle from "./ThemeToggle";
 
@@ -6,13 +7,17 @@ interface ConsoleHeaderProps {
   databaseName: string;
   developerMode: boolean;
   onDeveloperModeToggle: (enabled: boolean) => void;
+  onLogout: () => void;
+  onBackToDbSelect: () => void;
 }
 
 export default function ConsoleHeader({
   userName,
   databaseName,
   developerMode,
-  onDeveloperModeToggle
+  onDeveloperModeToggle,
+  onLogout,
+  onBackToDbSelect
 }: ConsoleHeaderProps) {
   return (
     <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-6 py-4">
@@ -50,6 +55,26 @@ export default function ConsoleHeader({
               <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
               <span className="text-xs text-slate-600 dark:text-slate-400">Connected</span>
             </div>
+          </div>
+
+          {/* Back & Logout Buttons */}
+          <div className="flex items-center gap-2 border-l border-slate-200 dark:border-slate-700 pl-6">
+            <button
+              onClick={onBackToDbSelect}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
+              title="Change Database"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Change DB</span>
+            </button>
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+              title="Logout"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
           </div>
         </div>
       </div>

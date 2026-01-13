@@ -2,6 +2,7 @@
 
 export interface ChatSession {
     id: string;
+    userId: string;
     title: string;
     databaseName: string;
     createdAt: Date;
@@ -19,8 +20,8 @@ export interface ChatMessage {
 
 export interface DatabaseAdapter {
     // Session operations
-    createSession(databaseName: string, title?: string): Promise<ChatSession>;
-    getSessions(): Promise<ChatSession[]>;
+    createSession(userId: string, databaseName: string, title?: string): Promise<ChatSession>;
+    getSessions(userId: string): Promise<ChatSession[]>;
     getSession(id: string): Promise<ChatSession | null>;
     updateSessionTitle(id: string, title: string): Promise<void>;
     deleteSession(id: string): Promise<void>;

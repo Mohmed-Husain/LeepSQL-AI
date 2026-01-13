@@ -31,6 +31,7 @@ export class SQLiteAdapter implements DatabaseAdapter {
                     const sessionsStore = db.createObjectStore('sessions', { keyPath: 'id' });
                     sessionsStore.createIndex('createdAt', 'createdAt', { unique: false });
                     sessionsStore.createIndex('databaseName', 'databaseName', { unique: false });
+                    sessionsStore.createIndex('userId', 'userId', { unique: false });
                 }
 
                 // Create messages store
@@ -54,11 +55,12 @@ export class SQLiteAdapter implements DatabaseAdapter {
         return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     }
 
-    async createSession(databaseName: string, title?: string): Promise<ChatSession> {
+    async createSession(userId: string, databaseName: string, title?: string): Promise<ChatSession> {
         if (!this.db) throw new Error('Database not initialized');
 
         const session: ChatSession = {
             id: this.generateId(),
+            userId,
             title: title || `Chat ${new Date().toLocaleDateString()}`,
             databaseName,
             createdAt: new Date(),
@@ -80,30 +82,28 @@ export class SQLiteAdapter implements DatabaseAdapter {
         });
     }
 
-    async getSessions(): Promise<ChatSession[]> {
+    async getSessions(userId: string): Promise<ChatSession[]> {
         if (!this.db) throw new Error('Database not initialized');
 
         return new Promise((resolve, reject) => {
             const transaction = this.db!.transaction(['sessions'], 'readonly');
             const store = transaction.objectStore('sessions');
-            const index = store.index('createdAt');
-            const request = index.openCursor(null, 'prev'); // Most recent first
+            const request = store.getAll();
 
-            const sessions: ChatSession[] = [];
-
-            request.onsuccess = (event) => {
-                const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
-                if (cursor) {
-                    const data = cursor.value;
-                    sessions.push({
+            request.onsuccess = () => {
+                const allSessions = request.result;
+                // Filter by userId and sort by createdAt descending
+                const userSessions = allSessions
+                    .filter((data: any) => data.userId === userId)
+                    .map((data: any) => ({
                         ...data,
                         createdAt: new Date(data.createdAt),
                         updatedAt: new Date(data.updatedAt),
-                    });
-                    cursor.continue();
-                } else {
-                    resolve(sessions);
-                }
+                    }))
+                    .sort((a: ChatSession, b: ChatSession) => 
+                        b.createdAt.getTime() - a.createdAt.getTime()
+                    );
+                resolve(userSessions);
             };
 
             request.onerror = () => reject(new Error('Failed to get sessions'));

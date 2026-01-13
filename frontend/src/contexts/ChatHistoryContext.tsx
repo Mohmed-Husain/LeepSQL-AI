@@ -28,9 +28,14 @@ interface ChatHistoryContextType {
     refreshSessions: () => Promise<void>;
 }
 
+interface ChatHistoryProviderProps {
+    children: ReactNode;
+    userId: string;
+}
+
 const ChatHistoryContext = createContext<ChatHistoryContextType | undefined>(undefined);
 
-export function ChatHistoryProvider({ children }: { children: ReactNode }) {
+export function ChatHistoryProvider({ children, userId }: ChatHistoryProviderProps) {
     const [adapter, setAdapter] = useState<DatabaseAdapter | null>(null);
     const [sessions, setSessions] = useState<ChatSession[]>([]);
     const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
@@ -46,8 +51,8 @@ export function ChatHistoryProvider({ children }: { children: ReactNode }) {
                 const dbAdapter = await createDatabaseAdapter({ type: 'sqlite' });
                 setAdapter(dbAdapter);
 
-                // Load existing sessions
-                const existingSessions = await dbAdapter.getSessions();
+                // Load existing sessions for this user
+                const existingSessions = await dbAdapter.getSessions(userId);
                 setSessions(existingSessions);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to initialize database');
@@ -62,23 +67,23 @@ export function ChatHistoryProvider({ children }: { children: ReactNode }) {
         return () => {
             closeDatabaseConnection();
         };
-    }, []);
+    }, [userId]);
 
     const refreshSessions = useCallback(async () => {
         if (!adapter) return;
         try {
-            const existingSessions = await adapter.getSessions();
+            const existingSessions = await adapter.getSessions(userId);
             setSessions(existingSessions);
         } catch (err) {
             console.error('Failed to refresh sessions:', err);
         }
-    }, [adapter]);
+    }, [adapter, userId]);
 
     const createNewSession = useCallback(async (databaseName: string, title?: string): Promise<ChatSession> => {
         if (!adapter) throw new Error('Database not initialized');
 
         try {
-            const session = await adapter.createSession(databaseName, title);
+            const session = await adapter.createSession(userId, databaseName, title);
             setSessions(prev => [session, ...prev]);
             setCurrentSession(session);
             setCurrentMessages([]);
@@ -88,7 +93,7 @@ export function ChatHistoryProvider({ children }: { children: ReactNode }) {
             setError(message);
             throw err;
         }
-    }, [adapter]);
+    }, [adapter, userId]);
 
     const selectSession = useCallback(async (sessionId: string) => {
         if (!adapter) return;

@@ -16,12 +16,16 @@ interface ConsolePageProps {
   userName: string;
   databaseName: string;
   connectionInfo: ConnectionInfo;
+  onLogout: () => void;
+  onBackToDbSelect: () => void;
 }
 
 export default function ConsolePage({
   userName,
   databaseName,
   connectionInfo,
+  onLogout,
+  onBackToDbSelect,
 }: ConsolePageProps) {
   const [developerMode, setDeveloperMode] = useState(false);
   const [hasQueried, setHasQueried] = useState(false);
@@ -279,6 +283,8 @@ export default function ConsolePage({
         databaseName={databaseName}
         developerMode={developerMode}
         onDeveloperModeToggle={setDeveloperMode}
+        onLogout={onLogout}
+        onBackToDbSelect={onBackToDbSelect}
       />
 
       <div className="flex-1 flex overflow-hidden">

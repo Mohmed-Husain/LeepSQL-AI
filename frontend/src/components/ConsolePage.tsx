@@ -100,30 +100,11 @@ export default function ConsolePage({
       const data = await response.json();
       console.log(data);
 
-      // Call evaluator to check for problems
-      const evalResponse = await fetch(`${API_BASE_URL}/api/evaluater`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          user_query: query,
-          sql_query: data.sql_query,
-          has_problem: false,
-          problem_description: ""
-        }),
-      });
-
-      if (evalResponse.ok) {
-
-        const evalData = await evalResponse.json();
-        console.log("Evaluator result:", evalData);
-
-        if (evalData.has_problem) {
-          // Show feedback toast with problem description
-          setFeedbackToast({ message: evalData.problem_description, visible: true });
-          setToastProgress(100);
-        }
+      // Check for problems from the generate response
+      if (data.has_problem) {
+        // Show feedback toast with problem description
+        setFeedbackToast({ message: data.problem_description, visible: true });
+        setToastProgress(100);
       }
 
       // Show the SQL query in modal for approval

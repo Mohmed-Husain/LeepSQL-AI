@@ -1,0 +1,53 @@
+# LeepSQL-AI Docker Compose Configuration
+# Multi-service architecture for Natural Language to SQL system
+
+services:
+  # Frontend Service - React/Vite Application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-/api}
+        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+    container_name: leepsql-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - agents
+    environment:
+      - NODE_ENV=production
+    networks:
+      - leepsql-network
+    restart: unless-stopped
+
+  # AI Agents Service - LangGraph Pipeline
+  agents:
+    build:
+      context: ./agents
+      dockerfile: Dockerfile
+    container_name: leepsql-agents
+    ports:
+      - "8000:8000"
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - PYTHONUNBUFFERED=1
+    env_file:
+      - .env
+    networks:
+      - leepsql-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  leepsql-network:
+    driver: bridge
+
+volumes:
+  logs:
+    driver: local

@@ -1,0 +1,35 @@
+# LeepSQL-AI Production Docker Compose
+# Use this file to deploy using pre-built images from Docker Hub
+# Usage: docker-compose -f docker-compose.hub.yml up -d
+
+services:
+  # Frontend Service - React/Vite Application
+  frontend:
+    image: arkonafoob/leepsql-ai-frontend:${VERSION:-latest}
+    container_name: leepsql-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - agents
+    environment:
+      - NODE_ENV=production
+    networks:
+      - leepsql-network
+    restart: unless-stopped
+
+  # AI Agents Service - LangGraph Pipeline
+  agents:
+    image: arkonafoob/leepsql-ai-agents:${VERSION:-latest}
+    container_name: leepsql-agents
+    ports:
+      - "8000:8000"
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - PYTHONUNBUFFERED=1
+    networks:
+      - leepsql-network
+    restart: unless-stopped
+
+networks:
+  leepsql-network:
+    driver: bridge

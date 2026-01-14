@@ -1,0 +1,32 @@
+# Git
+.git
+.gitignore
+
+# Dependencies
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.venv
+venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Logs
+*.log
+logs/
+
+# Jupyter
+*.ipynb
+.ipynb_checkpoints/
+
+# Test
+.pytest_cache/
+.coverage
+
+# Misc
+.env.local
+*.md

@@ -364,7 +364,7 @@ async def generate(request: GenerateFormat):
             "postgres_url": request.postgres_url,
             "database": request.db_name
         })
-        print("hello")
+     
         generated_sql = gen_res["sql_query"]
         print(f"Generated SQL: {generated_sql}")
         # Agent 2: Evaluate the generated query for correctness and security
@@ -397,8 +397,7 @@ async def execute(reqest:ExecuterFormat):
     return res['results']
         
         
-@app.post("/api/evaluater")
-async def evaluate(request: EvaluatorFormat):
+
     """
     Evaluate SQL query for security issues.
     """
@@ -414,9 +413,9 @@ async def evaluate(request: EvaluatorFormat):
             "problem_description": res["problem_description"]
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) 
 # ==================== Run Server ====================
 
-if __name__ == "__main__":
+if __name__ == "__main__": 
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

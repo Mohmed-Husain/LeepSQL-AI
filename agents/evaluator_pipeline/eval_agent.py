@@ -25,12 +25,16 @@ class OutputFormat(BaseModel):
 
 
 # %%
-from langchain_ollama import ChatOllama
-llm = ChatOllama(
-    model="qwen3-vl:235b-cloud",
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash-lite",
+    google_api_key=os.getenv("GOOGLE_API_KEY"),
     temperature=0.5
 )
-
 # %%
 structured_llm  = llm.with_structured_output(OutputFormat)
 

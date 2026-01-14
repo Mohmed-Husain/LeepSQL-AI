@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { ConnectionInfo } from '../types';
 import databaseIcon from "../assets/databaseIcon.png";
 import ThemeToggle from './ThemeToggle';
+import { ENV } from '../lib/env';
 
 interface AuthPageProps {
   onAuthenticated: (user: { userId: string; name: string }, database: string, connectionInfo: ConnectionInfo) => void;
@@ -189,7 +190,8 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     setIsVerifying(true);
 
     try {
-      const response = await fetch('http://localhost:8000/api/verify-connection', {
+      console.log('🔧 Connecting to API:', ENV.API_BASE_URL);
+      const response = await fetch(`${ENV.API_BASE_URL}/api/verify-connection`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

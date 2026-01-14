@@ -7,11 +7,16 @@ import ChatHistory from "./ChatHistory";
 import { QueryResult, ConnectionInfo } from "../types";
 import { Check, X, AlertTriangle, Play, Terminal } from "lucide-react";
 import { useChatHistory } from "../contexts/ChatHistoryContext";
+import { ENV } from "../lib/env";
 
 
+// API URL from runtime env (Docker) or build-time env (Vite dev)
+const API_BASE_URL = ENV.API_BASE_URL;
 
-// API URL from environment variable (set in .env file)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+// Debug logging - remove after testing
+console.log("🔧 ENV.API_BASE_URL:", ENV.API_BASE_URL);
+console.log("🔧 API_BASE_URL:", API_BASE_URL);
+console.log("🔧 import.meta.env.VITE_API_BASE_URL:", import.meta.env.VITE_API_BASE_URL);
 
 interface ConsolePageProps {
   userName: string;

@@ -539,7 +539,8 @@ async def generate(request: GenerateFormat):
     """
     Generate SQL query and evaluate it for correctness and security.
     """
-    logger.info("="*50)
+    
+    logger.info("hi")
     logger.info("[GENERATE] New request received")
     logger.info(f"[GENERATE] User query: {request.user_query}")
     logger.info(f"[GENERATE] Database: {request.db_name}")
@@ -547,7 +548,7 @@ async def generate(request: GenerateFormat):
 
 
     try:
-        print("hi")
+        # print("hi")
         # Agent 1: Generate the SQL query
         logger.info("[GENERATE] Invoking SQL generator agent...")
         gen_res = generate_agent.invoke({

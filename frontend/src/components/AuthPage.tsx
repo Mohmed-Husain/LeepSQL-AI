@@ -21,7 +21,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const [isVerifying, setIsVerifying] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [error, setError] = useState('');
-  const [availableDatabases] = useState(['production_db', 'analytics_db', 'staging_db']);
+  const [availableDatabases] = useState(['postgres',]);
   const [selectedDatabase, setSelectedDatabase] = useState('');
 
   const handleVerify = async () => {

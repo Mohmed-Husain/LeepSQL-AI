@@ -126,41 +126,6 @@
 # #             os.remove(tmp_path)
 # #             print(f"🗑️ Cleaned up temp file")
 
-# @app.post("/api/import-csv")
-# async def import_csv_endpoint(file: UploadFile = File(...), table_name: str = Form(...)):
-#     if not file.filename.lower().endswith(".csv"):
-#         raise HTTPException(status_code=400, detail="Only CSV files allowed")
-    
-#     tmp_path = None
-    
-#     try:
-#         tmp_path = os.path.join(tempfile.gettempdir(), f"upload_{os.urandom(4).hex()}.csv")
-        
-#         with open(tmp_path, "wb") as f:
-#             f.write(await file.read())
-        
-#         # This now returns a dict!
-#         result = import_csv_two_step(
-#             csv_path=tmp_path,
-#             table_name=table_name,
-#             connection_url=SUPABASE_URL
-#         )
-        
-#         # Now this works because result is a dict
-#         return {
-#             "message": f"CSV successfully imported to table '{table_name}'",
-#             "uploaded_filename": file.filename,
-#             **result  # ✅ This works now!
-#         }
-        
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-    
-#     finally:
-#         if tmp_path and os.path.exists(tmp_path):
-#             os.remove(tmp_path)
-
-
 # @app.post("/api/generate")
 # async def generate(request: GenerateFormat):
 #     """
@@ -351,7 +316,7 @@ async def root():
 #             print(f"🗑️ Cleaned up temp file")
 
 @app.post("/api/import-csv")
-async def import_csv_endpoint(file: UploadFile = File(...)):
+async def import_csv_endpoint(file: UploadFile = File(...), table_name: str = Form(...)):
     if not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV files allowed")
     
@@ -366,13 +331,13 @@ async def import_csv_endpoint(file: UploadFile = File(...)):
         # This now returns a dict!
         result = import_csv_two_step(
             csv_path=tmp_path,
-            table_name="temp_tablegfhdfhhdgh2",
+            table_name=table_name,
             connection_url=SUPABASE_URL
         )
         
         # Now this works because result is a dict
         return {
-            "message": f"CSV successfully imported to table 'temp_table'",
+            "message": f"CSV successfully imported to table '{table_name}'",
             "uploaded_filename": file.filename,
             **result  # ✅ This works now!
         }
@@ -383,6 +348,7 @@ async def import_csv_endpoint(file: UploadFile = File(...)):
     finally:
         if tmp_path and os.path.exists(tmp_path):
             os.remove(tmp_path)
+
 
 
 @app.post("/api/generate")

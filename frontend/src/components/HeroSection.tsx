@@ -28,7 +28,7 @@ export default function HeroSection() {
         <div className="pt-8">
           <div className="inline-block bg-slate-100 border border-slate-200 rounded-lg px-4 py-3">
             <p className="text-xs text-slate-500 mb-1">Example:</p>
-            <p className="text-sm text-slate-700">Show total sales by city for the last 30 days</p>
+            <p className="text-sm text-slate-700">Which city gives us the most revenue?</p>
           </div>
         </div>
       </div>

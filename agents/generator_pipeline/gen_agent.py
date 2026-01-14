@@ -23,13 +23,17 @@ from typing import List , Dict , Any
 
 
 # %%
-POSTGRES_URL ="postgresql://postgres:,C^qsk~wWdq7*p4@db.gmixhcrgxajwaligvyxz.supabase.co:5432/postgres"
+# Default fallback URL (will be overridden by request)
+DEFAULT_POSTGRES_URL = "postgresql://postgres:password@localhost:5432/postgres"
 
 # %%
 class GraphState(BaseModel):
-    table_schema: str= Field( description="The schema of the table" , default="") ,
-    user_query: str = Field( description="The user's query" ,default="") ,
-    sql_query: str = Field( description="The generated SQL query" ,default="") 
+    table_schema: str = Field(description="The schema of the table", default="")
+    user_query: str = Field(description="The user's query", default="")
+    sql_query: str = Field(description="The generated SQL query", default="")
+    postgres_url: str = Field(description="PostgreSQL connection URL", default="")
+    database: str = Field(description="Database name", default="postgres")
+
 class OutputSql(BaseModel):
     sql_query: str = Field( description="The generated SQL query without anything else just sql query")
 
@@ -64,10 +68,23 @@ prompt_generator = ChatPromptTemplate.from_messages([
 
 # %%
 from generator_pipeline.table_schema_extractor import get_detailed_schema
+import logging
 
-def table_schema_extract (state : GraphState) -> Dict:
-    table_schema = get_detailed_schema(POSTGRES_URL)
-    return {"table_schema" : table_schema}
+logger = logging.getLogger(__name__)
+
+def table_schema_extract(state: GraphState) -> Dict:
+    # Use the postgres_url from state, fallback to default if empty
+    connection_url = state.postgres_url if state.postgres_url else DEFAULT_POSTGRES_URL
+    logger.info(f"[GEN_AGENT] Extracting schema from database...")
+    logger.info(f"[GEN_AGENT] Connection URL provided: {'Yes' if state.postgres_url else 'No (using default)'}")
+    
+    try:
+        table_schema = get_detailed_schema(connection_url)
+        logger.info(f"[GEN_AGENT] Schema extracted successfully")
+        return {"table_schema": table_schema}
+    except Exception as e:
+        logger.error(f"[GEN_AGENT] Failed to extract schema: {str(e)}")
+        raise
 
 # %%
 def generator(state:GraphState)->Dict:

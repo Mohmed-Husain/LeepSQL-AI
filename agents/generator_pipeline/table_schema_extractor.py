@@ -1,4 +1,7 @@
 import psycopg2
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def get_detailed_schema(db_url: str) -> str:
@@ -17,8 +20,11 @@ def get_detailed_schema(db_url: str) -> str:
         - Unique constraints
     """
     conn = None
+    logger.info("[SCHEMA_EXTRACTOR] Attempting to connect to database...")
+    
     try:
         conn = psycopg2.connect(db_url)
+        logger.info("[SCHEMA_EXTRACTOR] Connected to database successfully")
         cur = conn.cursor()
         
         # Get all user tables (only from public schema)
@@ -31,6 +37,7 @@ def get_detailed_schema(db_url: str) -> str:
         """
         cur.execute(tables_query)
         tables = cur.fetchall()
+        logger.info(f"[SCHEMA_EXTRACTOR] Found {len(tables)} tables")
         
         schema_output = []
         
@@ -133,11 +140,19 @@ def get_detailed_schema(db_url: str) -> str:
             
             schema_output.append("\n".join(table_info))
         
+        logger.info("[SCHEMA_EXTRACTOR] Schema extraction completed")
         return "\n".join(schema_output)
-        
+    
+    except psycopg2.OperationalError as e:
+        logger.error(f"[SCHEMA_EXTRACTOR] Database connection error: {str(e)}")
+        raise
+    except Exception as e:
+        logger.error(f"[SCHEMA_EXTRACTOR] Error extracting schema: {str(e)}")
+        raise
     finally:
         if conn:
             conn.close()
+            logger.info("[SCHEMA_EXTRACTOR] Database connection closed")
 
 
 def get_user_tables(db_url: str) -> str:

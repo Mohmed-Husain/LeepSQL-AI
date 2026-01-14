@@ -239,6 +239,15 @@ from evaluator_pipeline.eval_agent import agent as evaluator_agent
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 import tempfile, os
 from csv_adder.add_csv_to_db import import_csv_two_step
+import logging
+import traceback
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # ==================== Pydantic Models ====================
 class QueryRequest(BaseModel):
@@ -530,9 +539,17 @@ async def generate(request: GenerateFormat):
     """
     Generate SQL query and evaluate it for correctness and security.
     """
+    logger.info("="*50)
+    logger.info("[GENERATE] New request received")
+    logger.info(f"[GENERATE] User query: {request.user_query}")
+    logger.info(f"[GENERATE] Database: {request.db_name}")
+    logger.info(f"[GENERATE] Postgres URL provided: {'Yes' if request.postgres_url else 'No'}")
+
+
     try:
         print("hi")
         # Agent 1: Generate the SQL query
+        logger.info("[GENERATE] Invoking SQL generator agent...")
         gen_res = generate_agent.invoke({
             "user_query": request.user_query,
             "postgres_url": request.postgres_url,
@@ -540,15 +557,19 @@ async def generate(request: GenerateFormat):
         })
      
         generated_sql = gen_res["sql_query"]
-        print(f"Generated SQL: {generated_sql}")
+        logger.info(f"[GENERATE] Generated SQL: {generated_sql}")
+        
         # Agent 2: Evaluate the generated query for correctness and security
+        logger.info("[GENERATE] Invoking evaluator agent...")
         eval_res = evaluator_agent.invoke({
             "user_query": request.user_query,
             "sql_query": generated_sql,
             "has_problem": False,
             "problem_description": ""
         })
-        print(f"Evaluation Result: {eval_res}")
+        logger.info(f"[GENERATE] Evaluation Result: has_problem={eval_res['has_problem']}")
+        logger.info("[GENERATE] Request completed successfully")
+        logger.info("="*50)
         
         return {
             "sql_query": generated_sql,
@@ -557,6 +578,9 @@ async def generate(request: GenerateFormat):
         }
     
     except Exception as e:
+        logger.error(f"[GENERATE] ERROR: {str(e)}")
+        logger.error(f"[GENERATE] Traceback: {traceback.format_exc()}")
+        logger.info("="*50)
         raise HTTPException(status_code=500, detail=str(e))
 
 

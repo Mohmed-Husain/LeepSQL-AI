@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     MessageSquare,
     Plus,
@@ -74,6 +74,7 @@ export default function ChatHistory({ databaseName, onNewChat }: ChatHistoryProp
     };
 
     const handleConfirmDelete = async () => {
+
         if (!deleteConfirmId) return;
         try {
             await deleteSession(deleteConfirmId);
@@ -121,6 +122,11 @@ export default function ChatHistory({ databaseName, onNewChat }: ChatHistoryProp
         );
     }
 
+    useEffect(()=>{
+        console.log(sessions);
+        
+    },[])
+
     return (
         <div className="w-64 bg-slate-50 dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col">
             {/* Header */}
@@ -148,7 +154,7 @@ export default function ChatHistory({ databaseName, onNewChat }: ChatHistoryProp
                     <span>New Chat</span>
                 </button>
             </div>
-
+            
             {/* Sessions List */}
             <div className="flex-1 overflow-y-auto">
                 {isLoading ? (
